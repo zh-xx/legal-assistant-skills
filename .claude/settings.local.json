@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nRemove .claude folder \\(local config only\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git push)"
-    ]
-  }
-}
