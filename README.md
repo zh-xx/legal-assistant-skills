@@ -6,7 +6,7 @@ AI assistant skills for legal work. Compatible with Claude Code, Codex, and othe
 
 ## Skills
 
-- `contract-review` — Contract review with comment annotations, three-layer checklist (basic/business/legal), summary, opinion, and Mermaid flowchart. Language-aware (English/Chinese).
+- `contract-review` — Contract review with comment annotations, three-layer checklist (basic/business/legal), summary, opinion, and Mermaid flowchart.
 
 ## Usage
 
