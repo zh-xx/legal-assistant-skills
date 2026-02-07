@@ -1,23 +1,42 @@
-# Legal Assistant Skills
+# 法律助手技能集
 
-AI assistant skills for legal work. Compatible with Claude Code, Codex, and other platforms.
+适用于 Claude Code、Codex 及其他平台的法律工作 AI 助手技能。
 
-> **Disclaimer:** This repository provides software tools only and does not constitute legal advice.
+> **免责声明**：本仓库仅提供软件工具，不构成法律建议。
 
-## Skills
+## 技能列表
 
-- `contract-review` — Contract review with comment annotations, three-layer checklist (basic/business/legal), summary, opinion, and Mermaid flowchart.
+### contract-review
+合同审查技能，通过添加评论式问题标注来辅助合同审查，不修改原文。功能包括：
 
-## Usage
+- 三层审查清单（基础/商业/法律）
+- 结构化评论（问题类型、风险原因、修订建议）
+- 风险等级通过审核者名称编码
+- 生成合同摘要、综合意见和 Mermaid 业务流程图
 
-**Claude Code:** Copy skill folders to `~/.claude/skills/`
+### law-to-markdown
+将法条/规范文件（`.txt`/`.docx`/`.pdf`）转换为 Markdown 格式。支持多种输入格式，采用三阶段处理流程（转换 → 格式化 → 校验），自动识别中国法律文本结构，生成规范的 Markdown 文件和详细的审核报告。
 
-**Codex:** Copy skill folders to `~/.codex/skills/`
+**标题层级对应：**
+| 层级 | Markdown |
+|------|----------|
+| 法律名称 | `#` |
+| 编/分编 | `##` |
+| 章 | `###` |
+| 节 | `####` |
+| 条 | `#####` |
+| 款/项/目 | -（无标题）|
 
-## Contributing
+## 使用方法
 
-Create a new folder with `skill.md` and optional examples. Submit a pull request.
+**Claude Code：** 将技能文件夹复制到 `~/.claude/skills/`
 
-## License
+**Codex：** 将技能文件夹复制到 `~/.codex/skills/`
 
-See individual skill folders.
+## 贡献指南
+
+创建新文件夹，包含 `skill.md` 和可选的示例文件，提交 Pull Request。
+
+## 许可证
+
+请参阅各个技能文件夹中的许可证文件。
