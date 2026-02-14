@@ -220,3 +220,11 @@ node scripts/generate_report.js <input.json> [output.docx]
 2. **分层输出：** 高风险问题必须突出标注，低风险问题可合并说明
 3. **给出替代方案：** 每个问题尽量提供可操作的修改建议
 4. **区分事实判断与法律判断：** 无法仅凭广告文本判断的事项（如资质文件是否齐全），标注为"建议核实"而非直接判定违规
+
+## 许可证
+
+SPDX-License-Identifier: Apache-2.0
+
+Copyright (c) 2026 JiCheng
+
+采用 Apache License 2.0 许可，许可证原文见仓库根目录 `LICENSE`。

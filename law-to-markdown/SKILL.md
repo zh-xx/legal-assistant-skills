@@ -85,3 +85,11 @@ python3 law-to-markdown/scripts/law_to_markdown.py "input.pdf"
 python3 law-to-markdown/scripts/law_to_markdown.py "input.docx" --allow-fallback
 python3 law-to-markdown/scripts/law_to_markdown.py "input.pdf" --allow-fallback
 ```
+
+## 许可证
+
+SPDX-License-Identifier: Apache-2.0
+
+Copyright (c) 2026 JiCheng
+
+采用 Apache License 2.0 许可，许可证原文见仓库根目录 `LICENSE`。

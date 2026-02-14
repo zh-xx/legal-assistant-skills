@@ -134,3 +134,11 @@ See **[references/examples.md](references/examples.md)** for a full workflow exa
 5. Flowchart must come strictly from the contract text
 6. Summary is objective only; no risk analysis
 7. Opinion only reflects findings already identified
+
+## License
+
+SPDX-License-Identifier: Apache-2.0
+
+Copyright (c) 2026 JiCheng
+
+Licensed under the Apache License, Version 2.0. See repository root `LICENSE`.

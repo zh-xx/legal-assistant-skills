@@ -45,4 +45,8 @@
 
 ## 许可证
 
-请参阅各个技能文件夹中的许可证文件。
+本仓库所有技能统一采用 Apache License 2.0，许可证原文见仓库根目录 `LICENSE`。
+
+SPDX-License-Identifier: Apache-2.0
+
+Copyright (c) 2026 JiCheng
