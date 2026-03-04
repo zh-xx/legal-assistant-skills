@@ -1,5 +1,35 @@
 # Contract Review Checklist
 
+## Layer 0: Entity Verification (Subject Authenticity)
+
+### 1. Entity Extraction
+- [ ] All contracting parties are identified (full legal names)
+- [ ] Unified Social Credit Code (统一社会信用代码) is extracted if present
+- [ ] Legal representative names are noted if stated
+- [ ] Entity type is identified (company, individual business, natural person, etc.)
+
+### 2. Name Accuracy
+- [ ] Registered name matches exactly (no typos, missing/extra characters)
+- [ ] Entity type suffix is correct (有限公司 vs 有限责任公司, etc.)
+- [ ] If trade name differs from registered name, both are verified
+
+### 3. Authenticity & Status
+- [ ] Entity exists in business registration records
+- [ ] Entity is not in revoked/cancelled/abnormal status
+- [ ] Business scope covers the contract's subject matter (if verifiable)
+
+### 4. Verification Method
+- [ ] Use MCP business lookup tool (企业详情查询) if available
+- [ ] Fall back to Web Search if MCP tool is unavailable
+- [ ] Record verification source in comment
+
+**Risk level guidance:**
+- 🔴 High: entity does not exist, or name significantly wrong, or revoked/cancelled
+- 🟡 Medium: minor name discrepancy, or status could not be fully verified
+- 🔵 Low: minor formatting difference in name (e.g., punctuation)
+
+---
+
 ## Layer 1: Basic Review (Text Quality)
 
 ### 1. Text Accuracy
@@ -169,7 +199,7 @@
 ## Usage Notes
 
 ### Review Process
-1. Review in order: Layer 1 → Layer 2 → Layer 3
+1. Review in order: Layer 0 → Layer 1 → Layer 2 → Layer 3
 2. Evaluate each checklist item
 3. Record findings and risk levels
 4. Add structured comments to the document

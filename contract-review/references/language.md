@@ -24,13 +24,23 @@ Use the **contract’s dominant language** for all outputs: comment labels, summ
 - `【风险原因】`
 - `【修订建议】`
 
+## Layer 0 Label Mapping
+
+**English**
+- `[Verification Source]`
+- `[Registration Status]`
+
+**Chinese**
+- `【核查来源】`
+- `【登记状态】`
+
 ## Summary Heading Mapping (Chinese)
 
 When the contract is Chinese, use these headings/labels exactly:
 
 - `一、合同基本信息`
   - `项目` / `内容`
-  - `合同名称` / `合同类型` / `合同当事人` / `签订时间` / `合同期限` / `合同金额`
+  - `合同名称` / `合同类型` / `合同当事人`（含主体核查结果：登记状态、核查来源） / `签订时间` / `合同期限` / `合同金额`
 - `二、业务模式概述`
   - `简要描述：...`
 - `三、核心条款要素`

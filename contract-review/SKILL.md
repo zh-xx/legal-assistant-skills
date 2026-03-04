@@ -1,13 +1,13 @@
 ---
 name: contract-review
-description: "Contract review skill that adds comment-based issue annotations without changing original text. Enforces a three-layer review (basic, business, legal), writes structured comments (issue type, risk reason, revision suggestion) with risk level encoded via reviewer name, and generates a contract summary, consolidated opinion, and Mermaid business flowchart (with rendered image). Output language must follow the contract’s language."
+description: "Contract review skill that adds comment-based issue annotations without changing original text. Enforces a four-layer review (entity verification, basic, business, legal), writes structured comments (issue type, risk reason, revision suggestion) with risk level encoded via reviewer name, and generates a contract summary, consolidated opinion, and Mermaid business flowchart (with rendered image). Output language must follow the contract’s language."
 ---
 
 # Contract Review Skill
 
 ## Overview
 
-This skill performs contract reviews by **adding comments only** (no edits to the original text). It follows a three-layer review (basic, business, legal) and generates:
+This skill performs contract reviews by **adding comments only** (no edits to the original text). It follows a four-layer review (entity verification, basic, business, legal) and generates:
 
 - Annotated contract (.docx)
 - Contract summary (.docx)
@@ -20,12 +20,13 @@ This skill performs contract reviews by **adding comments only** (no edits to th
 
 1. Unpack the contract (.docx) for XML operations
 2. Read contract text (pandoc or XML)
-3. Execute three-layer review
-4. Add comments to the document
-5. Generate contract summary
-6. Generate consolidated opinion
-7. Generate business flowchart and render image
-8. Repack to .docx
+3. Extract and verify contracting parties (Layer 0)
+4. Execute three-layer clause review (Layer 1–3)
+5. Add comments to the document
+6. Generate contract summary
+7. Generate consolidated opinion
+8. Generate business flowchart and render image
+9. Repack to .docx
 
 ## Output Naming
 
@@ -50,7 +51,15 @@ This skill performs contract reviews by **adding comments only** (no edits to th
 
 ## Review Standards
 
-Use the three-layer review model and the detailed checklist in **[references/checklist.md](references/checklist.md)**.
+Use the four-layer review model and the detailed checklist in **[references/checklist.md](references/checklist.md)**.
+
+### Layer 0: Entity verification (subject authenticity)
+- Extract all contracting parties (full legal names, credit codes, legal representatives)
+- Verify each entity's registered name accuracy and business registration status
+- **Verification tool priority:**
+  1. If an MCP tool for business registration lookup is available in the current environment (e.g., enterprise info query, company lookup, 企业查询, 工商查询), use it to query each party's name or Unified Social Credit Code.
+  2. If no such MCP tool is available, use Web Search to look up "[entity name] 工商登记信息" or "[entity name] business registration".
+  3. Record the verification source (MCP tool name / Web Search) in the comment.
 
 ### Layer 1: Basic (text quality)
 - Accuracy of numbers, dates, terms
@@ -102,7 +111,7 @@ Outputs:
 li## Technical Notes
 
 Core workflow:
-1. Unpack → 2. Add comments → 3. Summary → 4. Opinion → 5. Flowchart → 6. Repack
+1. Unpack → 2. Entity verification → 3. Add comments → 4. Summary → 5. Opinion → 6. Flowchart → 7. Repack
 
 API & implementation details:
 - **[references/technical.md](references/technical.md)**
@@ -128,12 +137,13 @@ See **[references/examples.md](references/examples.md)** for a full workflow exa
 ## Important Rules
 
 1. Never alter original contract text
-2. Review all three layers, do not skip items
-3. Ensure risk level is accurate and consistent
-4. Keep comments precise, professional, and actionable
-5. Flowchart must come strictly from the contract text
-6. Summary is objective only; no risk analysis
-7. Opinion only reflects findings already identified
+2. Entity verification (Layer 0) must complete before clause review (Layers 1–3)
+3. Review all four layers, do not skip items
+4. Ensure risk level is accurate and consistent
+5. Keep comments precise, professional, and actionable
+6. Flowchart must come strictly from the contract text
+7. Summary is objective only; no risk analysis
+8. Opinion only reflects findings already identified
 
 ## License
 
