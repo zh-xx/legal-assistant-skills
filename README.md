@@ -62,8 +62,17 @@
 pip3 install requests
 
 # 2. 配置MCP Key（从 https://mcp.qcc.com 申请）
+# 方式一：临时设置（当前终端有效）
 export QCC_MCP_API_KEY="your_key_here"
+
+# 方式二：永久设置（推荐）
+# 添加到shell配置文件，这样无论从哪启动Claude Code都能读取到
+echo 'export QCC_MCP_API_KEY="your_key_here"' >> ~/.zshrc
+source ~/.zshrc
+# 如果是Bash用户，请使用 ~/.bashrc
 ```
+
+**注意**：如果使用方式一（临时设置），必须在同一终端窗口中启动Claude Code，否则环境变量不会生效。强烈建议使用方式二（永久设置）。
 
 ### 一键安装
 
