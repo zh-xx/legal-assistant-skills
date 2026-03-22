@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
-[![MCP](https://img.shields.io/badge/MCP-QiChaCha-orange.svg)](https://mcp.qcc.com)
+[![MCP](https://img.shields.io/badge/MCP-QCC%20企查查-orange.svg)](https://mcp.qcc.com)
 [![Claude](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://claude.ai)
 
 ---
@@ -166,7 +166,7 @@ MCP: 18类风险全扫描
 │                    │            │      │
 │                    ▼            ▼      │
 │            ┌─────────────────────┐     │
-│            │  QiChaCha MCP API   │     │
+│            │  QCC 企查查MCP      │     │
 │            │  (4服务/65工具)     │     │
 │            └─────────────────────┘     │
 └─────────────────────────────────────────┘
@@ -306,7 +306,7 @@ risks = client.check_company_risk("企查查科技股份有限公司")
 
 ### 联系方式
 - GitHub Issues
-- Email: [你的邮箱]
+- Email: duhu@qcc.com
 
 ---
 
