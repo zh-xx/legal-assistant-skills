@@ -55,14 +55,27 @@
 
 ## ⚡ 30秒快速体验
 
+### 前置准备
+
 ```bash
-# 1. 安装（一键脚本）
-bash <(curl -sL https://raw.githubusercontent.com/duhu2000/legal-assistant-skills/main/install_qcc_mcp.sh)
+# 1. 安装Python依赖（只需一次）
+pip3 install requests
 
 # 2. 配置MCP Key（从 https://mcp.qcc.com 申请）
 export QCC_MCP_API_KEY="your_key_here"
+```
 
-# 3. 在Claude Code中使用
+### 一键安装
+
+```bash
+# 3. 运行安装脚本
+bash <(curl -sL https://raw.githubusercontent.com/duhu2000/legal-assistant-skills/main/install_qcc_mcp.sh)
+```
+
+### 开始使用
+
+```bash
+# 4. 在Claude Code中
 # 请审核这份合同: /path/to/contract.docx
 ```
 
