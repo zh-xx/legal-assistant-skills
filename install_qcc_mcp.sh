@@ -69,8 +69,16 @@ echo ""
 
 # 安装Python依赖
 echo "正在安装Python依赖..."
-pip3 install -q requests 2>/dev/null || pip install -q requests 2>/dev/null || echo "⚠️  请手动安装依赖: pip3 install requests"
-echo "✅ 依赖安装完成"
+if python3 -c "import requests" 2>/dev/null; then
+    echo "✅ requests 模块已安装"
+else
+    echo "正在安装 requests 模块..."
+    pip3 install --user requests 2>/dev/null || \
+    pip install --user requests 2>/dev/null || \
+    python3 -m pip install --user requests 2>/dev/null || \
+    echo "⚠️  自动安装失败，请手动运行: pip3 install --user requests"
+fi
+echo "✅ 依赖检查完成"
 echo ""
 
 # 检查环境变量
