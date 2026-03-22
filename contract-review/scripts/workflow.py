@@ -1404,7 +1404,7 @@ class ContractReviewWorkflow:
                          flowchart_mermaid: Optional[str] = None,
                          flowchart_mmd_filename: str = "business_flowchart.mmd",
                          flowchart_image_filename: str = "business_flowchart.png",
-                         render_flowchart: bool = True) -> bool:
+                         render_flowchart: bool = False) -> bool:
         """
         运行完整工作流程
 
@@ -1672,7 +1672,7 @@ def review_contract(contract_path: str,
                    flowchart_mermaid: Optional[str] = None,
                    flowchart_mmd_filename: str = "business_flowchart.mmd",
                    flowchart_image_filename: str = "business_flowchart.png",
-                   render_flowchart: bool = True,
+                   render_flowchart: bool = False,
                    parallel_outputs: bool = True) -> bool:
     """
     便捷函数:一键完成合同审核
