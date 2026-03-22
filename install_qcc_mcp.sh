@@ -67,6 +67,12 @@ chmod -R +x "$SKILLS_DIR/contract-review/scripts"/*.py 2>/dev/null || true
 echo "✅ 权限设置完成"
 echo ""
 
+# 安装Python依赖
+echo "正在安装Python依赖..."
+pip3 install -q requests 2>/dev/null || pip install -q requests 2>/dev/null || echo "⚠️  请手动安装依赖: pip3 install requests"
+echo "✅ 依赖安装完成"
+echo ""
+
 # 检查环境变量
 echo "========================================"
 echo "环境配置检查"
