@@ -123,9 +123,16 @@ Output file: `综合审核意见.docx` for Chinese or `Consolidated_Opinion.docx
 Generate Mermaid flowchart per requirements and render to image.
 - See **[references/flowchart.md](references/flowchart.md)**
 
+**Implementation:** Call `render_mermaid_code()` from `scripts/mermaid_renderer.py`. The skill will:
+1. Write Mermaid code to `.mmd` file
+2. Use `mmdc` (mermaid-cli) to render to PNG image
+3. If `mmdc` is not installed, only `.mmd` file will be generated (no image)
+
+**DO NOT** use matplotlib or other Python libraries to render the flowchart.
+
 Outputs:
 - `business_flowchart.mmd`
-- `business_flowchart.png`
+- `business_flowchart.png` (if mmdc is available)
 
 ## Technical Notes
 
