@@ -122,10 +122,19 @@ import os
 # 动态获取HOME目录
 home_dir = os.path.expanduser("~")
 skill_path = os.path.join(home_dir, ".claude/skills/contract-review")
-sys.path.insert(0, skill_path)
+scripts_path = os.path.join(skill_path, "scripts")
+
+# 添加scripts目录到path
+sys.path.insert(0, scripts_path)
 
 try:
-    from scripts.qcc_mcp_client import QccMcpClient
+    # 直接从scripts目录导入
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("qcc_mcp_client", os.path.join(scripts_path, "qcc_mcp_client.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    QccMcpClient = module.QccMcpClient
+
     client = QccMcpClient()
 
     if client.is_enabled():
