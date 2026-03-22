@@ -172,8 +172,22 @@ class ContractReviewWorkflow:
         # 初始化MCP客户端
         if self.enable_mcp_verification:
             try:
-                self.mcp_client = QccMcpClient(mcp_auth_token)
-                print(f"✓ 企查查MCP客户端初始化成功")
+                import os
+                env_key = os.environ.get("QCC_MCP_API_KEY")
+                if mcp_auth_token:
+                    self.mcp_client = QccMcpClient(mcp_auth_token)
+                elif env_key:
+                    self.mcp_client = QccMcpClient()
+                else:
+                    print(f"⚠️  未设置 QCC_MCP_API_KEY，跳过MCP初始化")
+                    self.mcp_client = None
+                    self.enable_mcp_verification = False
+
+                if self.mcp_client and self.mcp_client.is_enabled():
+                    print(f"✓ 企查查MCP客户端初始化成功 (API Key: ...{env_key[-5:] if env_key else 'N/A'})")
+                elif self.mcp_client:
+                    print(f"⚠️  MCP客户端已创建但未启用")
+                    self.mcp_client = None
             except Exception as e:
                 print(f"⚠️  MCP客户端初始化失败: {e}")
                 self.mcp_client = None
