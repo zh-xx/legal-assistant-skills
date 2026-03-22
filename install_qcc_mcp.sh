@@ -112,9 +112,17 @@ echo "测试安装"
 echo "========================================"
 echo ""
 
-python3 << 'PYTHON_TEST'
+# 使用临时Python文件进行测试，避免heredoc变量展开问题
+TEST_SCRIPT="/tmp/test_qcc_mcp_$$.py"
+
+cat > "$TEST_SCRIPT" << 'EOF'
 import sys
-sys.path.insert(0, "${HOME}/.claude/skills/contract-review")
+import os
+
+# 动态获取HOME目录
+home_dir = os.path.expanduser("~")
+skill_path = os.path.join(home_dir, ".claude/skills/contract-review")
+sys.path.insert(0, skill_path)
 
 try:
     from scripts.qcc_mcp_client import QccMcpClient
@@ -140,10 +148,15 @@ try:
 
 except Exception as e:
     print(f"❌ 测试失败: {e}")
+    import traceback
+    traceback.print_exc()
     sys.exit(1)
 
 print("\n✅ 所有测试通过！")
-PYTHON_TEST
+EOF
+
+python3 "$TEST_SCRIPT" || true
+rm -f "$TEST_SCRIPT"
 
 echo ""
 echo "========================================"
