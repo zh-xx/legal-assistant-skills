@@ -16,6 +16,45 @@ This skill performs contract reviews by **adding comments only** (no edits to th
 
 **Language rule:** detect the contract’s dominant language and output all generated content (comments, summary, opinion, flowchart text) in that language. Use the guidance in **[references/language.md](references/language.md)**.
 
+---
+
+## MCP Configuration Requirements (for Chinese Enterprise Verification)
+
+**⚠️ IMPORTANT: To enable QCC MCP enterprise verification, ensure MCP servers are configured**
+
+### Checklist:
+1. ✅ `~/.claude/.mcp.json` exists and is properly configured
+2. ✅ `QCC_MCP_API_KEY` environment variable is set
+3. ✅ Claude Code has been restarted to load MCP configuration
+
+### Configuration:
+```bash
+# 1. Create MCP config file
+cat > ~/.claude/.mcp.json << ‘EOF’
+{
+  "mcpServers": {
+    "qcc-company": {
+      "url": "https://mcp.qcc.com/data/company/stream",
+      "headers": { "Authorization": "Bearer ${QCC_MCP_API_KEY}" }
+    },
+    "qcc-risk": {
+      "url": "https://mcp.qcc.com/data/risk/stream",
+      "headers": { "Authorization": "Bearer ${QCC_MCP_API_KEY}" }
+    }
+  }
+}
+EOF
+
+# 2. Set API Key
+export QCC_MCP_API_KEY="your_api_key_here"
+
+# 3. Restart Claude Code
+```
+
+See: https://github.com/duhu2000/legal-assistant-skills/blob/main/docs/MCP_CONFIGURATION.md
+
+---
+
 ## Workflow
 
 ### Execution Steps (MUST FOLLOW)
@@ -24,7 +63,10 @@ When user requests contract review (e.g., "请审核这份合同" or "review thi
 
 1. **Locate contract file** - If user provides only filename, search in common directories (~/Downloads, ~/.claude/downloads, current directory) to find the full path
 2. **Read contract** using available tools (pandoc preferred, fallback to direct XML) - MUST use the correct full path found in step 1
-3. **Extract parties** and verify via QCC MCP (if enabled) or Web Search
+3. **Extract parties** and verify via **QCC MCP** (if configured) or Web Search
+   - **FOR CHINESE COMPANIES: ALWAYS use QCC MCP** -- never use web search when MCP is available
+   - If QCC MCP returns data, use it as authoritative source
+   - Only fall back to web search if MCP is not configured
 4. **Generate ALL required content** (MUST create all of the following):
    - Contract summary text (合同概要) → pass as `summary_text` parameter
    - Consolidated opinion text (综合审核意见) → pass as `opinion_text` parameter
