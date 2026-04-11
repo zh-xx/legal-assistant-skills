@@ -49,6 +49,16 @@ try:
 except ImportError:
     from contract_analyzer import ContractAnalyzer
 
+try:
+    from scripts.qcc_mcp_client import QccMcpClient, generate_verification_comments
+except ImportError:
+    from qcc_mcp_client import QccMcpClient, generate_verification_comments
+
+try:
+    from scripts.api_list_checker import ApiListChecker
+except ImportError:
+    from api_list_checker import ApiListChecker
+
 from scripts.document import Document
 from scripts.summary_renderer import render_summary_docx
 from scripts.opinion_renderer import render_opinion_docx
@@ -133,6 +143,8 @@ class ContractReviewWorkflow:
         output_dir: str = None,
         enable_analysis: bool = True,
         enable_smart_keyword_expansion: bool = False,
+        enable_mcp_verification: bool = True,
+        mcp_auth_token: str = None,
     ):
         """
         初始化工作流程
@@ -143,14 +155,32 @@ class ContractReviewWorkflow:
             output_dir: 输出目录(如果为None,自动创建"审核结果：「原合同文件名」"文件夹)
             enable_analysis: 是否启用智能合同分析(默认True)
             enable_smart_keyword_expansion: 是否启用智能关键词扩展(默认False)
+            enable_mcp_verification: 是否启用企查查MCP主体核验(默认True)
+            mcp_auth_token: 企查查MCP授权令牌(可选)
         """
         self.contract_path = Path(contract_path)
         self.reviewer_name = reviewer_name
         self.reviewer_initials = "审核"
         self.enable_analysis = enable_analysis
         self.enable_smart_keyword_expansion = enable_smart_keyword_expansion
+        self.enable_mcp_verification = enable_mcp_verification
         self.output_language = None
         self.output_dir_default = output_dir is None
+        self.mcp_client = None
+        self.mcp_verification_results = None
+
+        # 初始化MCP客户端
+        if self.enable_mcp_verification:
+            try:
+                self.mcp_client = QccMcpClient(mcp_auth_token)
+                if self.mcp_client.is_enabled():
+                    print(f"✓ 企查查MCP客户端初始化成功")
+                else:
+                    print(f"⚠️  MCP客户端已创建但未启用 (未设置QCC_MCP_API_KEY)")
+                    self.mcp_client = None
+            except Exception as e:
+                print(f"⚠️  MCP客户端初始化失败: {e}")
+                self.mcp_client = None
 
         # 如果未指定输出目录,创建审核结果文件夹
         if output_dir is None:
@@ -238,6 +268,291 @@ class ContractReviewWorkflow:
                 old_dir.rmdir()
         except Exception:
             pass
+
+    def step_mcp_verify_parties(self) -> List[Dict]:
+        """
+        MCP主体核验步骤: 自动提取合同主体并通过企查查MCP核验
+
+        Returns:
+            List[Dict]: 自动生成的核验批注列表
+        """
+        if not self.mcp_client:
+            print(f"⚠️  MCP客户端未初始化,跳过主体核验")
+            return []
+
+        print(f"\n{'='*60}")
+        print(f"MCP主体核验: 自动提取并核验合同主体")
+        print(f"{'='*60}")
+
+        # 从合同中提取文本
+        contract_text = ""
+        try:
+            import zipfile
+            import xml.etree.ElementTree as ET
+
+            with zipfile.ZipFile(self.contract_path) as zf:
+                xml_content = zf.read("word/document.xml")
+                root = ET.fromstring(xml_content)
+                ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+                texts = []
+                for node in root.findall(".//w:t", ns):
+                    if node.text:
+                        texts.append(node.text)
+                contract_text = "".join(texts)
+        except Exception as e:
+            print(f"⚠️  提取合同文本失败: {e}")
+            return []
+
+        # 提取合同主体
+        import re
+        parties = []
+
+        # 常见模式匹配 - 支持多种合同格式
+        patterns = [
+            # 标准格式：甲方名称：XXX公司
+            r'甲方(?:名称)?[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            r'乙方(?:名称)?[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            # 买方/卖方格式
+            r'买方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            r'卖方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            # 发包/承包格式
+            r'发包方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            r'承包方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            # 委托/受托格式
+            r'委托方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            r'受托方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            # 供方/需方格式
+            r'供方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+            r'需方[：:]\s*([^\n]{2,30}(?:公司|集团|企业|银行|合作社))',
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, contract_text)
+            for match in matches:
+                # 清理并去重 - 保留公司名称部分
+                party = match.strip()
+                # 去除多余空格和常见后缀
+                party = re.sub(r'\s+', '', party)  # 去除所有空格
+                party = re.sub(r'联系地址.*$', '', party)  # 去除地址部分
+                party = re.sub(r'法定代表人.*$', '', party)  # 去除法人部分
+                if party and party not in parties and len(party) >= 4:
+                    parties.append(party)
+
+        if not parties:
+            print(f"⚠️  未从合同中提取到合同主体")
+            return []
+
+        print(f"✓ 提取到 {len(parties)} 个合同主体: {', '.join(parties)}")
+
+        # 使用MCP批量核验
+        party_info = self.mcp_client.batch_verify_parties(parties)
+
+        # 生成批注
+        mcp_comments = generate_verification_comments(party_info)
+
+        print(f"✓ 生成 {len(mcp_comments)} 条主体核验批注")
+
+        # ========== 增强：风险排查 ==========
+        print(f"\n{'='*60}")
+        print(f"MCP风险排查: 对合同主体进行18类风险扫描")
+        print(f"{'='*60}")
+
+        risk_comments = []
+        for party in parties:
+            try:
+                # 查询企业风险
+                risk_result = self.mcp_client.check_company_risk(party)
+
+                # 生成风险批注
+                from scripts.qcc_mcp_client import generate_risk_comments
+                party_risk_comments = generate_risk_comments(party, risk_result)
+                risk_comments.extend(party_risk_comments)
+
+                # 打印风险摘要
+                summary = risk_result.get("summary", {})
+                high = summary.get("high", 0)
+                medium = summary.get("medium", 0)
+                total = summary.get("total", 0)
+
+                if high > 0:
+                    print(f"  🔴 {party}: 发现 {high} 类高风险")
+                elif medium > 0:
+                    print(f"  🟡 {party}: 发现 {medium} 类中风险")
+                elif total > 0:
+                    print(f"  🟢 {party}: 发现 {total} 类低风险")
+                else:
+                    print(f"  ✅ {party}: 未发现风险")
+
+            except Exception as e:
+                print(f"  ⚠️  {party} 风险查询失败: {e}")
+
+        print(f"✓ 生成 {len(risk_comments)} 条风险排查批注")
+
+        # 合并主体核验批注和风险批注
+        all_mcp_comments = mcp_comments + risk_comments
+
+        # ========== 新增：接口清单审核 ==========
+        print(f"\n{'='*60}")
+        print(f"接口清单审核: 比对合同接口与官方API文档一致性")
+        print(f"{'='*60}")
+
+        api_list_comments = []
+        try:
+            api_checker = ApiListChecker()
+            api_list_comments = api_checker.generate_review_comments(contract_text)
+
+            if api_list_comments:
+                print(f"✓ 发现 {len(api_list_comments)} 条接口清单问题")
+                for comment in api_list_comments:
+                    risk_level = comment.get('risk_level', 'medium')
+                    icon = "🔴" if risk_level == 'high' else "🟡" if risk_level == 'medium' else "🔵"
+                    print(f"  {icon} {comment.get('search', [''])[0]}: {risk_level}风险")
+            else:
+                print(f"✓ 接口清单审核通过，未发现明显问题")
+
+        except Exception as e:
+            print(f"⚠️  接口清单审核失败: {e}")
+
+        # 合并所有MCP批注（主体核验 + 风险排查 + 接口清单）
+        all_mcp_comments = all_mcp_comments + api_list_comments
+
+        # 收集详细司法风险报告
+        detailed_judicial_reports = {}
+        if self.mcp_client:
+            from scripts.qcc_mcp_client import generate_detailed_judicial_report
+            for party in parties:
+                try:
+                    report = generate_detailed_judicial_report(party, self.mcp_client)
+                    detailed_judicial_reports[party] = report
+                except Exception as e:
+                    print(f"  ⚠️  生成{party}详细司法报告失败: {e}")
+
+        self.mcp_verification_results = {
+            "parties": parties,
+            "info": party_info,
+            "comments": all_mcp_comments,
+            "risk_comments": risk_comments,
+            "api_list_comments": api_list_comments,
+            "detailed_judicial_reports": detailed_judicial_reports
+        }
+
+        return all_mcp_comments
+
+    def generate_judicial_risk_opinion(self) -> str:
+        """
+        生成司法风险分析部分的意见文本
+
+        Returns:
+            司法风险分析文本
+        """
+        if not hasattr(self, 'mcp_verification_results') or not self.mcp_verification_results:
+            return ""
+
+        reports = self.mcp_verification_results.get('detailed_judicial_reports', {})
+        if not reports:
+            return ""
+
+        opinion_parts = []
+        opinion_parts.append("\n\n【三、合同主体司法风险分析】\n")
+
+        for party_name, report in reports.items():
+            if not report or report.get('error'):
+                continue
+
+            summary = report.get('summary', {})
+            risk_level = summary.get('risk_level', 'low')
+
+            # 风险等级中文映射
+            risk_level_text = {
+                'critical': '🔴 极高风险',
+                'high': '🔴 高风险',
+                'medium': '🟡 中风险',
+                'low': '🟢 低风险'
+            }.get(risk_level, '🟢 低风险')
+
+            opinion_parts.append(f"\n（一）{party_name}")
+            opinion_parts.append(f"\n风险等级：{risk_level_text}\n")
+
+            # 被执行人信息
+            executed_info = report.get('executed_info', [])
+            if executed_info:
+                opinion_parts.append("\n1. 被执行人信息")
+                opinion_parts.append(f"   发现 {len(executed_info)} 条被执行人记录，总执行标的：{summary.get('total_executed_amount', 0):,.2f} 元")
+                for idx, item in enumerate(executed_info[:3], 1):  # 最多显示3条
+                    opinion_parts.append(f"\n   记录{idx}：")
+                    opinion_parts.append(f"   • 案号：{item.get('案号', 'N/A')}")
+                    opinion_parts.append(f"   • 执行标的：{item.get('执行标的', 'N/A')} 元")
+                    opinion_parts.append(f"   • 执行法院：{item.get('执行法院', 'N/A')}")
+                    opinion_parts.append(f"   • 立案日期：{item.get('立案日期', 'N/A')}")
+
+            # 失信信息
+            dishonest_info = report.get('dishonest_info', [])
+            if dishonest_info:
+                opinion_parts.append("\n2. 失信信息（老赖）")
+                opinion_parts.append(f"   发现 {len(dishonest_info)} 条失信记录")
+                for idx, item in enumerate(dishonest_info[:2], 1):
+                    opinion_parts.append(f"\n   记录{idx}：")
+                    opinion_parts.append(f"   • 案号：{item.get('案号', 'N/A')}")
+                    opinion_parts.append(f"   • 履行情况：{item.get('履行情况', 'N/A')}")
+
+            # 限制高消费
+            restriction_info = report.get('high_consumption_restriction', [])
+            if restriction_info:
+                opinion_parts.append("\n3. 限制高消费")
+                opinion_parts.append(f"   发现 {len(restriction_info)} 条限制高消费记录")
+                for idx, item in enumerate(restriction_info[:2], 1):
+                    opinion_parts.append(f"\n   记录{idx}：")
+                    opinion_parts.append(f"   • 案号：{item.get('案号', 'N/A')}")
+                    opinion_parts.append(f"   • 限制对象：{item.get('限制对象', 'N/A')}")
+
+            # 开庭公告统计
+            hearing_notices = report.get('hearing_notices', [])
+            if hearing_notices:
+                opinion_parts.append("\n4. 诉讼案件统计")
+                plaintiff_count = summary.get('total_cases_as_plaintiff', 0)
+                defendant_count = summary.get('total_cases_as_defendant', 0)
+                opinion_parts.append(f"   开庭公告总数：{len(hearing_notices)} 条")
+                opinion_parts.append(f"   • 作为原告：{plaintiff_count} 件")
+                opinion_parts.append(f"   • 作为被告：{defendant_count} 件")
+
+                # 显示最近的开庭信息
+                if hearing_notices:
+                    opinion_parts.append("\n   最近开庭信息：")
+                    for idx, case in enumerate(hearing_notices[:3], 1):
+                        parties = case.get('当事人', {})
+                        case_type = "原告" if party_name in parties.get('原告', []) else "被告" if party_name in parties.get('被告', []) else "当事人"
+                        opinion_parts.append(f"   • {case.get('开庭时间', 'N/A')} - {case.get('案由', 'N/A')}（作为{case_type}）")
+
+            # 裁判文书统计
+            judicial_docs = report.get('judicial_documents', [])
+            if judicial_docs:
+                opinion_parts.append(f"\n5. 裁判文书")
+                opinion_parts.append(f"   发现 {len(judicial_docs)} 份裁判文书")
+
+            # 法院公告
+            court_notices = report.get('court_notices', [])
+            if court_notices:
+                opinion_parts.append(f"\n6. 法院公告")
+                opinion_parts.append(f"   发现 {len(court_notices)} 条法院公告")
+
+            # 风险评估和建议
+            opinion_parts.append("\n【风险评估】")
+            if risk_level == 'critical':
+                opinion_parts.append("该企业存在失信记录，属于极高风险主体，建议立即终止合作谈判。")
+            elif risk_level == 'high':
+                opinion_parts.append(f"该企业存在被执行人记录（总标的{summary.get('total_executed_amount', 0):,.2f}元），")
+                if summary.get('total_executed_amount', 0) > 1000000:
+                    opinion_parts.append("执行金额较大，")
+                opinion_parts.append("建议要求对方提供风险解除证明或担保措施后再进行合作。")
+            elif risk_level == 'medium':
+                opinion_parts.append("该企业诉讼案件较多，建议关注其经营稳定性，在合同中增加履约保障条款。")
+            else:
+                if hearing_notices:
+                    opinion_parts.append("该企业诉讼活动主要为知识产权维权（作为原告），属于正常经营行为，未发现重大司法风险。")
+                else:
+                    opinion_parts.append("该企业当前司法风险状况良好，可正常开展合作。")
+
+        return "\n".join(opinion_parts)
 
     def step0_copy_contract(self) -> bool:
         """
@@ -1089,7 +1404,7 @@ class ContractReviewWorkflow:
                          flowchart_mermaid: Optional[str] = None,
                          flowchart_mmd_filename: str = "business_flowchart.mmd",
                          flowchart_image_filename: str = "business_flowchart.png",
-                         render_flowchart: bool = True) -> bool:
+                         render_flowchart: bool = False) -> bool:
         """
         运行完整工作流程
 
@@ -1165,6 +1480,19 @@ class ContractReviewWorkflow:
         # 执行所有步骤
         success = True
 
+        # MCP主体核验步骤: 自动提取并核验合同主体
+        mcp_comments = []
+        if self.enable_mcp_verification and self.mcp_client:
+            try:
+                mcp_comments = self.step_mcp_verify_parties()
+                if mcp_comments:
+                    print(f"✓ MCP核验完成,生成 {len(mcp_comments)} 条批注")
+            except Exception as e:
+                print(f"⚠️  MCP核验失败: {e}")
+
+        # 合并MCP批注和用户批注(MCP批注放在前面)
+        all_comments = mcp_comments + comments if mcp_comments else comments
+
         # 步骤0: 复制原合同到审核目录
         if not self.step0_copy_contract():
             return False
@@ -1175,7 +1503,7 @@ class ContractReviewWorkflow:
         if not self.step2_initialize():
             return False
 
-        if not self.step3_add_comments(comments):
+        if not self.step3_add_comments(all_comments):
             print("\n⚠️  部分批注添加失败,但继续保存...")
             success = False
 
@@ -1186,6 +1514,13 @@ class ContractReviewWorkflow:
 
         if not self.step5_save(output_docx_filename, validate=validate_doc):
             return False
+
+        # 如果提供了综合审核意见，自动追加司法风险分析
+        if opinion_text and hasattr(self, 'mcp_verification_results') and self.mcp_verification_results:
+            judicial_risk_text = self.generate_judicial_risk_opinion()
+            if judicial_risk_text:
+                opinion_text = opinion_text + judicial_risk_text
+                print(f"✓ 已追加司法风险分析到综合审核意见")
 
         if parallel_outputs and (summary_text or opinion_text or flowchart_mermaid):
             tasks = {}
@@ -1337,7 +1672,7 @@ def review_contract(contract_path: str,
                    flowchart_mermaid: Optional[str] = None,
                    flowchart_mmd_filename: str = "business_flowchart.mmd",
                    flowchart_image_filename: str = "business_flowchart.png",
-                   render_flowchart: bool = True,
+                   render_flowchart: bool = False,
                    parallel_outputs: bool = True) -> bool:
     """
     便捷函数:一键完成合同审核

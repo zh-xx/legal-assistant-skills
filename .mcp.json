@@ -1,0 +1,41 @@
+{
+  "mcpServers": {
+    "qcc-company": {
+      "url": "https://agent.qcc.com/mcp/company/stream",
+      "headers": {
+        "Authorization": "Bearer ${QCC_MCP_API_KEY}"
+      },
+      "description": "企查查企业基座 - 提供工商登记、股东信息、变更记录等企业基础信息服务"
+    },
+    "qcc-risk": {
+      "url": "https://agent.qcc.com/mcp/risk/stream",
+      "headers": {
+        "Authorization": "Bearer ${QCC_MCP_API_KEY}"
+      },
+      "description": "企查查风控大脑 - 提供失信、被执行、限高、破产等18类风险信息"
+    },
+    "qcc-ipr": {
+      "url": "https://agent.qcc.com/mcp/ipr/stream",
+      "headers": {
+        "Authorization": "Bearer ${QCC_MCP_API_KEY}"
+      },
+      "description": "企查查知产引擎 - 提供专利、商标、软件著作权等知识产权信息"
+    },
+    "qcc-operation": {
+      "url": "https://agent.qcc.com/mcp/operation/stream",
+      "headers": {
+        "Authorization": "Bearer ${QCC_MCP_API_KEY}"
+      },
+      "description": "企查查经营罗盘 - 提供招投标、资质证书、信用评级等经营信息"
+    }
+  },
+  "configuration": {
+    "required_env_vars": ["QCC_MCP_API_KEY"],
+    "setup_instructions": [
+      "1. 从 https://agent.qcc.com 申请API Key",
+      "2. 设置环境变量: export QCC_MCP_API_KEY='your_api_key_here'",
+      "3. 重启Claude Code以加载MCP配置",
+      "4. 使用 /skills load contract-review 或相关法律技能"
+    ]
+  }
+}
