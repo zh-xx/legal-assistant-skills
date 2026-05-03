@@ -57,9 +57,11 @@ Use the four-layer review model and the detailed checklist in **[references/chec
 - Extract all contracting parties (full legal names, credit codes, legal representatives)
 - Verify each entity's registered name accuracy and business registration status
 - **Verification tool priority:**
-  1. If an MCP tool for business registration lookup is available in the current environment (e.g., enterprise info query, company lookup, 企业查询, 工商查询), use it to query each party's name or Unified Social Credit Code.
-  2. If no such MCP tool is available, use Web Search to look up "[entity name] 工商登记信息" or "[entity name] business registration".
-  3. Record the verification source (MCP tool name / Web Search) in the comment.
+  1. **Enterprise Verification via QCC MCP (Recommended):** If `QCC_MCP_API_KEY` environment variable is set, use the QiChaCha MCP service for automated enterprise verification and risk assessment. See [Enterprise Verification Setup](#enterprise-verification-setup) below.
+  2. **Fallback MCP tools:** If no QCC API key but other MCP tools for business registration lookup are available (e.g., enterprise info query, company lookup, 企业查询, 工商查询), use them to query each party's name or Unified Social Credit Code.
+  3. **Web Search fallback:** If no MCP tool is available, use Web Search to look up "[entity name] 工商登记信息" or "[entity name] business registration".
+  4. Record the verification source (QCC MCP / MCP tool / Web Search) in the comment.
+
 
 ### Layer 1: Basic (text quality)
 - Accuracy of numbers, dates, terms
@@ -108,13 +110,46 @@ Outputs:
 - `business_flowchart.mmd`
 - `business_flowchart.png`
 
-li## Technical Notes
+## Technical Notes
 
 Core workflow:
 1. Unpack → 2. Entity verification → 3. Add comments → 4. Summary → 5. Opinion → 6. Flowchart → 7. Repack
 
 API & implementation details:
 - **[references/technical.md](references/technical.md)**
+
+## Enterprise Verification Setup (QCC MCP Integration)
+
+This skill supports **QCC 企查查 MCP (Model Context Protocol)** service for automated enterprise verification and risk assessment.
+
+### Features
+
+When QCC MCP is enabled, the skill automatically:
+- Verifies enterprise registration information (name, legal representative, credit code, status)
+- Performs 18-category risk screening (dishonest records, enforcement, operational abnormalities, tax violations, bankruptcy, etc.)
+- Generates structured review comments with risk levels
+
+### Setup Instructions
+
+1. **Apply for QCC MCP API Key**
+   - Visit [QiChaCha MCP Portal](https://mcp.qcc.com) to apply for access
+   - Obtain your API key
+
+2. **Set Environment Variable**
+   ```bash
+   export QCC_MCP_API_KEY="your_api_key_here"
+   ```
+
+3. **Verify Setup**
+   ```bash
+   python -c "from scripts.qcc_mcp_client import QccMcpClient; c = QccMcpClient(); print('✅ MCP enabled' if c.is_enabled() else '❌ MCP not enabled')"
+   ```
+
+### Fallback Behavior
+
+- **If QCC_MCP_API_KEY is set:** Use QiChaCha MCP for enterprise verification and risk screening
+- **If QCC_MCP_API_KEY is not set:** Fall back to Web Search for enterprise verification (original behavior)
+
 
 ## Dependencies
 
@@ -123,12 +158,14 @@ API & implementation details:
 - defusedxml
 - Mermaid CLI (`mmdc`) for rendering
 - python-docx for rich text output
+- requests (for QCC MCP API calls, optional)
 
 ## Troubleshooting (Short)
 
 - **Comments missing in Word**: run `doc.verify_comments()` and re-save
 - **find_paragraph fails**: shorten search text; confirm actual paragraph text
 - **Mermaid render fails**: ensure `mmdc` installed; use Chrome path or Puppeteer config
+- **QCC MCP not working**: verify `QCC_MCP_API_KEY` is set; check network connectivity to https://mcp.qcc.com
 
 ## Examples
 
